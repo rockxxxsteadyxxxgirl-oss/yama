@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import List, Optional
 
+import json
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -24,7 +25,17 @@ class Settings(BaseSettings):
     @classmethod
     def split_cors(cls, v: str | List[str]) -> List[str]:
         if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
+            text = v.strip()
+            # Try JSON list first
+            if (text.startswith("[") and text.endswith("]")) or (text.startswith('"') and text.endswith('"')):
+                try:
+                    data = json.loads(text)
+                    if isinstance(data, list):
+                        return [str(origin).strip() for origin in data if str(origin).strip()]
+                except Exception:
+                    pass
+            # Fallback: comma-separated string
+            return [origin.strip() for origin in text.split(",") if origin.strip()]
         return v
 
 
