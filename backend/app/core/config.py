@@ -24,19 +24,25 @@ class Settings(BaseSettings):
     @field_validator("backend_cors_origins", mode="before")
     @classmethod
     def split_cors(cls, v: str | List[str]) -> List[str]:
-        if isinstance(v, str):
-            text = v.strip()
-            # Try JSON list first
-            if (text.startswith("[") and text.endswith("]")) or (text.startswith('"') and text.endswith('"')):
-                try:
-                    data = json.loads(text)
-                    if isinstance(data, list):
-                        return [str(origin).strip() for origin in data if str(origin).strip()]
-                except Exception:
-                    pass
-            # Fallback: comma-separated string
-            return [origin.strip() for origin in text.split(",") if origin.strip()]
-        return v
+        try:
+            if isinstance(v, list):
+                return [str(origin).strip() for origin in v if str(origin).strip()]
+            if isinstance(v, str):
+                text = v.strip()
+                # Try JSON list first
+                if (text.startswith("[") and text.endswith("]")) or (text.startswith('"') and text.endswith('"')):
+                    try:
+                        data = json.loads(text)
+                        if isinstance(data, list):
+                            return [str(origin).strip() for origin in data if str(origin).strip()]
+                    except Exception:
+                        pass
+                # Fallback: comma-separated string
+                return [origin.strip() for origin in text.split(",") if origin.strip()]
+        except Exception:
+            pass
+        # Fallback to default if parsing fails
+        return ["http://localhost:5173"]
 
 
 @lru_cache
