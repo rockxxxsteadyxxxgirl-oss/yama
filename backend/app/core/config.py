@@ -22,6 +22,15 @@ class Settings(BaseSettings):
     google_maps_api_key: Optional[str] = None
     sentry_dsn: Optional[str] = None
 
+    # Elevation / horizon settings
+    elevation_mode: Optional[str] = None
+    elevation_zoom: Optional[int] = None
+    horizon_method: Optional[str] = None
+    elevation_bearing_step: Optional[float] = None
+    horizon_step_m: Optional[float] = None
+    horizon_max_distance_m: Optional[float] = None
+    horizon_smooth_window: Optional[int] = None
+
     @field_validator("backend_cors_origins", mode="before")
     @classmethod
     def split_cors(cls, v: str | List[str]) -> List[str]:
