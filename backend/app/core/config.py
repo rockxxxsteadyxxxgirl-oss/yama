@@ -13,7 +13,8 @@ class Settings(BaseSettings):
     debug: bool = True
     project_name: str = "BlueWave Forecast API"
     api_v1_prefix: str = "/api/v1"
-    backend_cors_origins: List[str] = ["http://localhost:5173"]
+    # Allow both list and comma-separated string to avoid env parse errors
+    backend_cors_origins: List[str] | str = ["http://localhost:5173"]
 
     database_url: str = "postgresql+psycopg://yakouchu:password@localhost:5432/yakouchu"
     openweather_api_key: Optional[str] = None
