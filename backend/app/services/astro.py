@@ -35,6 +35,7 @@ HORIZON_METHOD = os.getenv("HORIZON_METHOD", "ray").lower()  # ray | list
 HORIZON_STEP_M = float(os.getenv("HORIZON_STEP_M", "200"))
 HORIZON_MAX_DISTANCE_M = float(os.getenv("HORIZON_MAX_DISTANCE_M", "30000"))
 HORIZON_SMOOTH_WINDOW = int(os.getenv("HORIZON_SMOOTH_WINDOW", "3"))
+HORIZON_REFRACTION_K = float(os.getenv("HORIZON_REFRACTION_K", "0.0"))
 
 
 @dataclass
@@ -411,6 +412,16 @@ def _destination_point(lat: float, lng: float, bearing_deg: float, distance_m: f
     return math.degrees(lat2), math.degrees(lon2)
 
 
+def _curvature_drop(distance_m: float) -> float:
+    """Curvature + refraction drop in meters (positive = drop)."""
+    if distance_m <= 0:
+        return 0.0
+    # clamp k so denominator stays positive
+    k = max(-0.2, min(0.99, HORIZON_REFRACTION_K))
+    Re = 6371000.0 / (1.0 - k)
+    return (distance_m * distance_m) / (2.0 * Re)
+
+
 async def _batch_elevations(coords: List[tuple[float, float]], client: httpx.AsyncClient, url: str) -> List[Optional[float]]:
     """Fetch elevations from OpenTopodata-like API in chunks. Returns list with None on failure."""
     if not coords:
@@ -468,10 +479,25 @@ async def compute_horizon(lat: float, lng: float) -> HorizonProfile:
     if not distances_list:
         distances_list = [200, 500, 1000, 2000, 4000, 8000, 12000, 20000, 30000]
 
-    # ray方式: 一定ステップで最大角度を探索
+    # ray方式: 近距離高密度 → 中距離 → 指定ステップ
     ray_step = max(10.0, HORIZON_STEP_M)
     ray_max = max(ray_step, HORIZON_MAX_DISTANCE_M)
-    ray_distances = list(np.arange(0, ray_max + ray_step, ray_step))
+    stage1_end = 1500.0
+    stage2_end = 3000.0
+
+    ray_distances: list[float] = [0.0]
+    d = 0.0
+    while d < ray_max:
+        if d < stage1_end:
+            step = 50.0
+        elif d < stage2_end:
+            step = 100.0
+        else:
+            step = ray_step
+        next_d = min(ray_max, d + step)
+        if next_d - ray_distances[-1] > 1e-6:
+            ray_distances.append(next_d)
+        d = next_d
 
     coords: list[tuple[float, float]] = []
     method = HORIZON_METHOD
@@ -501,7 +527,8 @@ async def compute_horizon(lat: float, lng: float) -> HorizonProfile:
                     for d, elev in zip(ray_distances[1:], vals[1:]):
                         if elev is None:
                             continue
-                        dy = elev - base
+                        drop = _curvature_drop(d)
+                        dy = elev - base - drop
                         ang = math.degrees(math.atan2(dy, d))
                         max_angle = max(max_angle, ang)
                     elevations.append(max_angle)
@@ -514,7 +541,8 @@ async def compute_horizon(lat: float, lng: float) -> HorizonProfile:
                     for d, elev in zip(distances_list, batch[i * stride : (i + 1) * stride]):
                         if elev is None:
                             continue
-                        dy = elev - base
+                        drop = _curvature_drop(d)
+                        dy = elev - base - drop
                         ang = math.degrees(math.atan2(dy, d))
                         max_angle = max(max_angle, ang)
                     elevations.append(max_angle)
