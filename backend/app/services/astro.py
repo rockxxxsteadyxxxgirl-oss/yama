@@ -26,14 +26,14 @@ ELEVATION_CHUNK_SIZE = int(os.getenv("ELEVATION_CHUNK_SIZE", "90"))
 ELEVATION_BEARING_STEP = float(os.getenv("ELEVATION_BEARING_STEP", "2.5"))
 ELEVATION_DISTANCES = os.getenv(
     "ELEVATION_DISTANCES",
-    "200,500,1000,2000,4000,8000,12000,20000,30000",
+    "200,500,1000,2000,3000,4000,5000",
 )
 ELEVATION_MODE = os.getenv("ELEVATION_MODE", "opentopo").lower()
 ELEVATION_ZOOM = int(os.getenv("ELEVATION_ZOOM", "15"))
 GSI_NO_DATA = -9999.0
 HORIZON_METHOD = os.getenv("HORIZON_METHOD", "ray").lower()  # ray | list
 HORIZON_STEP_M = float(os.getenv("HORIZON_STEP_M", "200"))
-HORIZON_MAX_DISTANCE_M = float(os.getenv("HORIZON_MAX_DISTANCE_M", "30000"))
+HORIZON_MAX_DISTANCE_M = float(os.getenv("HORIZON_MAX_DISTANCE_M", "5000"))
 HORIZON_SMOOTH_WINDOW = int(os.getenv("HORIZON_SMOOTH_WINDOW", "3"))
 HORIZON_REFRACTION_K = float(os.getenv("HORIZON_REFRACTION_K", "0.0"))
 
@@ -474,8 +474,8 @@ async def compute_horizon(lat: float, lng: float) -> HorizonProfile:
     distances_list = (
         [float(x) for x in ELEVATION_DISTANCES.split(",") if x.strip().replace(".", "").isdigit()]
         if ELEVATION_DISTANCES
-        else [200, 500, 1000, 2000, 4000, 8000, 12000, 20000, 30000]
-    )
+    else [200, 500, 1000, 2000, 3000, 4000, 5000]
+)
     if not distances_list:
         distances_list = [200, 500, 1000, 2000, 4000, 8000, 12000, 20000, 30000]
 
