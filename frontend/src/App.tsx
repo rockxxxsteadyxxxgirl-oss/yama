@@ -770,7 +770,6 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-950/95 px-6 py-8 text-white md:px-10">
       <header className={`${gradientCard} px-6 py-6 md:px-10`}>
-        <p className="text-sm uppercase tracking-[0.18em] text-sky-200/80">Yamanoha Simulator (Web Demo)</p>
         <div className="mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-3xl font-semibold md:text-4xl">撮影前の星空×稜線シミュレーション</h1>
